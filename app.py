@@ -233,90 +233,64 @@ with tab2:
     st.pyplot(fig)
 
 # ---------- Prediksi Interaktif ----------
+# ---------- Prediksi Interaktif ----------
 with tab3:
-    st.header("Prediksi Interaktif (Model tersedia: LIT & NUM)")
-    st.markdown("Isi nilai variabel yang ingin digunakan untuk prediksi. Jika kamu tidak memasukkan semua fitur model, sisanya akan diisi dengan rata-rata dataset.")
+    st.header("Prediksi Interaktif (Model: LIT saja)")
+    st.markdown(
+        "Isi nilai variabel yang ingin digunakan untuk memprediksi **LIT (Literasi)**. "
+        "Model NUM tidak digunakan di versi ini."
+    )
 
-    # determine expected features from scaler/model or fallback to numeric df columns (excluding targets)
-    expected_features = None
-    # attempt to get from scaler_lit first, else scaler_num, else model_lit/model_num attribute, else numeric cols
-    for obj in (scaler_lit, scaler_num, model_lit, model_num):
-        if obj is not None and hasattr(obj, "feature_names_in_"):
-            expected_features = list(obj.feature_names_in_)
-            break
-    if expected_features is None:
-        # fallback: numeric cols excluding targets
-        expected_features = [c for c in numeric_cols if c not in ("LIT","NUM")]
+    # fitur tetap
+    num_features = [
+        "proporsi_pendidik_min_s1", "proporsi_pendidik_sertifikasi",
+        "jumlah_peserta_didik", "jumlah_pendidik", "rasio_pendidik_peserta_didik",
+        "jumlah_r_kelas", "jumlah_komp_milik", "jumlah_perpus",
+        "SES_siswa", "SES_sekolah",
+        "BUL", "SAF", "WEL", "TAS", "ENP", "OCC", "PBR"
+    ]
 
-    st.write("Detected expected features (used by model/scaler):")
-    st.write(expected_features)
+    st.write("Fitur yang digunakan untuk prediksi:")
+    st.write(num_features)
 
-    # build input form using expected_features
-    with st.form("predict_form"):
+    # form input
+    with st.form("predict_lit_form"):
         user_vals = {}
         cols_per_row = 3
-        rows = (len(expected_features) + cols_per_row - 1) // cols_per_row
+        rows = (len(num_features) + cols_per_row - 1) // cols_per_row
         for r in range(rows):
             cols = st.columns(cols_per_row)
             for i in range(cols_per_row):
                 idx = r*cols_per_row + i
-                if idx >= len(expected_features):
+                if idx >= len(num_features):
                     break
-                feat = expected_features[idx]
-                # determine bounds from dataset if available, else generic
+                feat = num_features[idx]
                 if feat in df.columns and pd.api.types.is_numeric_dtype(df[feat]):
                     lo = float(df[feat].min())
                     hi = float(df[feat].max())
                     default = float(df[feat].median())
                 else:
                     lo, hi, default = 0.0, 100.0, float(fallback_fill.get(feat, 0.0))
-                user_vals[feat] = cols[i].number_input(label=feat, min_value=lo, max_value=hi, value=default, format="%.4f")
+                user_vals[feat] = cols[i].number_input(
+                    label=feat, min_value=lo, max_value=hi, value=default, format="%.4f"
+                )
 
-        submitted = st.form_submit_button("Predict (both models)")
+        submitted = st.form_submit_button("Predict LIT")
 
     if submitted:
         X_input = pd.DataFrame([user_vals])
-
-        # Use safe_predict to align, fill, scale, predict
-        # fill missing with fallback_fill
-        y_lit_pred, used_feats_lit = None, None
-        y_num_pred, used_feats_num = None, None
 
         if model_lit is not None:
             try:
                 y_lit_pred_arr, used_feats_lit = safe_predict(model_lit, scaler_lit, X_input.copy(), fallback_fill)
                 y_lit_pred = float(y_lit_pred_arr[0])
+                st.success(f"Prediksi LIT: {y_lit_pred:.2f}")
+
             except Exception as e:
-                st.error(f"Error predicting LIT: {e}")
+                st.error(f"Error saat prediksi LIT: {e}")
         else:
-            st.warning("model_lit not loaded.")
+            st.warning("Model LIT belum dimuat. Pastikan file model_lit.pkl tersedia.")
 
-        if model_num is not None:
-            try:
-                y_num_pred_arr, used_feats_num = safe_predict(model_num, scaler_num, X_input.copy(), fallback_fill)
-                y_num_pred = float(y_num_pred_arr[0])
-            except Exception as e:
-                st.error(f"Error predicting NUM: {e}")
-        else:
-            st.warning("model_num not loaded.")
-
-        # show results
-        if y_lit_pred is not None:
-            st.success(f"Prediksi LIT: {y_lit_pred:.2f}")
-        if y_num_pred is not None:
-            st.success(f"Prediksi NUM: {y_num_pred:.2f}")
-
-        # quick bar chart
-        fig, ax = plt.subplots(figsize=(4,3))
-        vals = []
-        labels = []
-        if y_lit_pred is not None:
-            vals.append(y_lit_pred); labels.append("LIT")
-        if y_num_pred is not None:
-            vals.append(y_num_pred); labels.append("NUM")
-        ax.bar(labels, vals, color=["#00c4ff", "#ff6b6b"])
-        ax.set_ylim(0, max(vals)+10 if vals else 1)
-        st.pyplot(fig)
 
 # ---------- Model & Files ----------
 with tab4:
