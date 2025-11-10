@@ -1,0 +1,12 @@
+# Abaikan file model besar
+models/*.joblib
+
+# (opsional) File Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# (opsional) Folder lingkungan virtual
+venv/
+.env/
