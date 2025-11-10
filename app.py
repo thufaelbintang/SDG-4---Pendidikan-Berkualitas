@@ -334,7 +334,7 @@ with tab4:
     if school_factors:
         selected_school_factor = st.selectbox("Pilih faktor lingkungan sekolah", school_factors)
         fig, ax = plt.subplots(figsize=(6,4))
-        sns.regplot(data=df, x=selected_school_factor, y="LIT", lowess=True, scatter_kws={'alpha':0.3}, line_kws={'color':'#007BFF'}, label="LIT", ax=ax)
+        sns.regplot(data=df, x=selected_school_factor, y="LIT",scatter_kws={'alpha':0.3}, line_kws={'color':'#007BFF'}, label="LIT", ax=ax)
         sns.regplot(data=df, x=selected_school_factor, y="NUM", lowess=True, scatter_kws={'alpha':0.3}, line_kws={'color':'#FF5A5F'}, label="NUM", ax=ax)
         ax.set_title(f"Tren pengaruh {selected_school_factor} terhadap LIT & NUM")
         ax.set_xlabel(selected_school_factor)
